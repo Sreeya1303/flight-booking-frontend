@@ -27,16 +27,34 @@ export default function SearchFlights() {
 
   /* 🔍 SEARCH FLIGHTS */
   const searchFlights = async () => {
-    if (!from || !to) {
-      alert("Select both cities");
-      return;
-    }
+  if (!from || !to) {
+    alert("Select both cities");
+    return;
+  }
+
+  try {
+    console.log("Searching:", from, to);
 
     const res = await axios.get(
-      `${API_BASE_URL}/api/flights?from=${from}&to=${to}`
+      `${API_BASE_URL}/api/flights`,
+      {
+        params: { from, to }
+      }
     );
+
+    console.log("Flights:", res.data);
+
+    if (res.data.length === 0) {
+      alert("No flights found");
+    }
+
     setFlights(res.data);
-  };
+  } catch (err) {
+    console.error(err);
+    alert("Failed to fetch flights");
+  }
+};
+
 
   /* 💳 BOOK FLIGHT */
   const confirmBooking = async () => {
