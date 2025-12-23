@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import axios from "axios";
 import PaymentModal from "../components/PaymentModal";
 import hero from "../assets/hero.jpg";
-import API_BASE_URL from "../config/api";   // ✅ ADDED
+import API_BASE_URL from "../config/api";
 
 const cities = [
   "Hyderabad","Delhi","Mumbai","Bangalore","Chennai",
@@ -17,19 +17,13 @@ export default function SearchFlights() {
   const [seat, setSeat] = useState("");
   const [wallet, setWallet] = useState(0);
 
-  // ✅ INIT WALLET ONCE
+  // ✅ WALLET FROM BACKEND (NOT LOCAL STORAGE)
   useEffect(() => {
-    const storedWallet = localStorage.getItem("wallet");
-
-    if (storedWallet === null) {
-      localStorage.setItem("wallet", 50000);
-      setWallet(50000);
-    } else {
-      setWallet(Number(storedWallet));
-    }
+    axios.get(`${API_BASE_URL}/api/wallet`)
+      .then(res => setWallet(res.data.wallet))
+      .catch(() => alert("Backend not reachable"));
   }, []);
 
-  // 🔍 SEARCH FLIGHTS
   const searchFlights = async () => {
     if (!from || !to) {
       alert("Select both cities");
@@ -37,95 +31,55 @@ export default function SearchFlights() {
     }
 
     const res = await axios.get(
-      `${API_BASE_URL}/api/flights?from=${from}&to=${to}`   // ✅ FIXED
+      `${API_BASE_URL}/api/flights?from=${from}&to=${to}`
     );
-
     setFlights(res.data);
   };
 
-  // 💳 CONFIRM BOOKING
   const confirmBooking = async () => {
     try {
-      if (wallet <= 0) {
-        alert("Wallet balance is 0. Cannot book ticket.");
-        return;
-      }
-
       if (!seat) {
         alert("Select seat");
         return;
       }
 
-      const price =
-        selectedFlight.current_price || selectedFlight.base_price;
+      const price = selectedFlight.base_price;
 
-      if (wallet < price) {
-        alert("Insufficient wallet balance");
-        return;
-      }
+      await axios.post(`${API_BASE_URL}/api/wallet/deduct`, {
+        amount: price
+      });
 
-      const res = await axios.post(
-        `${API_BASE_URL}/api/book`,   // ✅ FIXED
-        {
-          flight_id: selectedFlight.flight_id,
-          passenger: "Sreeya",
-          seat
-        }
-      );
+      const res = await axios.post(`${API_BASE_URL}/api/book`, {
+        flight_id: selectedFlight.flight_id,
+        passenger: "Sreeya",
+        seat
+      });
 
-      // ✅ UPDATE WALLET
-      const newWallet = wallet - price;
-      setWallet(newWallet);
-      localStorage.setItem("wallet", newWallet);
-
-      // ✅ SAVE BOOKING
-      const booking = {
-        airline: selectedFlight.airline,
-        route: `${selectedFlight.departure_city} → ${selectedFlight.arrival_city}`,
-        seat,
-        amount: price,
-        pnr: res.data.booking.pnr,
-        date: new Date().toISOString()
-      };
-
-      const oldBookings =
-        JSON.parse(localStorage.getItem("bookings")) || [];
-
-      localStorage.setItem(
-        "bookings",
-        JSON.stringify([booking, ...oldBookings])
-      );
-
-      alert(`Booked Successfully!\nPNR: ${booking.pnr}`);
-      setSelectedFlight(null);
-      setSeat("");
+      alert(`Booked Successfully!\nPNR: ${res.data.booking.pnr}`);
       window.location.href = "/history";
 
-    } catch (err) {
-      console.error(err);
-      alert("Booking failed");
+    } catch {
+      alert("Booking failed or wallet insufficient");
     }
   };
 
   return (
     <>
-      {/* HERO */}
       <div
         className="h-[350px] bg-cover bg-center flex flex-col justify-center items-center text-white"
         style={{ backgroundImage: `url(${hero})` }}
       >
         <h1 className="text-4xl font-bold">Book Flights Instantly ✈️</h1>
-        <p className="mt-2">All Cities • Best Prices</p>
+        <p className="mt-2">Wallet: ₹{wallet}</p>
       </div>
 
-      {/* SEARCH */}
       <div className="bg-white shadow-lg p-6 rounded-lg max-w-5xl mx-auto -mt-12 flex gap-4">
-        <select className="border p-2 w-full" value={from} onChange={e => setFrom(e.target.value)}>
+        <select value={from} onChange={e => setFrom(e.target.value)} className="border p-2 w-full">
           <option value="">From</option>
           {cities.map(c => <option key={c}>{c}</option>)}
         </select>
 
-        <select className="border p-2 w-full" value={to} onChange={e => setTo(e.target.value)}>
+        <select value={to} onChange={e => setTo(e.target.value)} className="border p-2 w-full">
           <option value="">To</option>
           {cities.map(c => <option key={c}>{c}</option>)}
         </select>
@@ -135,16 +89,13 @@ export default function SearchFlights() {
         </button>
       </div>
 
-      {/* RESULTS */}
       <div className="max-w-5xl mx-auto mt-8 space-y-4">
         {flights.map(f => (
           <div key={f.flight_id} className="border p-4 rounded flex justify-between">
             <div>
               <h2 className="font-bold">{f.airline}</h2>
               <p>{f.departure_city} → {f.arrival_city}</p>
-              <p className="text-blue-600 font-bold">
-                ₹{f.current_price || f.base_price}
-              </p>
+              <p className="text-blue-600 font-bold">₹{f.base_price}</p>
             </div>
 
             <button
@@ -163,7 +114,7 @@ export default function SearchFlights() {
             airline: selectedFlight.airline,
             from: selectedFlight.departure_city,
             to: selectedFlight.arrival_city,
-            price: selectedFlight.current_price || selectedFlight.base_price
+            price: selectedFlight.base_price
           }}
           seat={seat}
           setSeat={setSeat}
