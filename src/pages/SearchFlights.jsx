@@ -17,79 +17,64 @@ export default function SearchFlights() {
   const [seat, setSeat] = useState("");
   const [wallet, setWallet] = useState(0);
 
-  /* 🔥 LOAD WALLET FROM BACKEND */
+  /* 🔥 LOAD WALLET */
   useEffect(() => {
     axios
       .get(`${API_BASE_URL}/api/wallet`)
       .then(res => setWallet(res.data.wallet))
-      .catch(() => alert("Backend not reachable"));
+      .catch(err => console.error("Wallet error:", err));
   }, []);
 
-  /* 🔍 SEARCH FLIGHTS */
+  /* 🔍 SEARCH FLIGHTS (NO ALERTS) */
   const searchFlights = async () => {
-  if (!from || !to) {
-    alert("Select both cities");
-    return;
-  }
+    if (!from || !to) return;
 
-  try {
-    console.log("Searching:", from, to);
+    try {
+      const res = await axios.get(
+        `${API_BASE_URL}/api/flights`,
+        { params: { from, to } }
+      );
 
-    const res = await axios.get(
-      `${API_BASE_URL}/api/flights`,
-      {
-        params: { from, to }
-      }
-    );
-
-    console.log("Flights:", res.data);
-
-    if (res.data.length === 0) {
-      alert("No flights found");
+      setFlights(res.data || []);
+    } catch (err) {
+      console.error("Flight fetch failed:", err);
+      setFlights([]); // silently fail
     }
-
-    setFlights(res.data);
-  } catch (err) {
-    console.error(err);
-    alert("Failed to fetch flights");
-  }
-};
-
+  };
 
   /* 💳 BOOK FLIGHT */
   const confirmBooking = async () => {
-    if (!seat) {
-      alert("Select seat");
-      return;
-    }
+    if (!seat) return;
 
     const price =
       selectedFlight.current_price || selectedFlight.base_price;
 
-    if (wallet < price) {
-      alert("Insufficient wallet balance");
-      return;
+    if (wallet < price) return;
+
+    try {
+      const bookingRes = await axios.post(`${API_BASE_URL}/api/book`, {
+        flight_id: selectedFlight.flight_id,
+        passenger: "Sreeya",
+        seat
+      });
+
+      const walletRes = await axios.post(
+        `${API_BASE_URL}/api/wallet/deduct`,
+        { amount: price }
+      );
+
+      setWallet(walletRes.data.wallet);
+
+      const booking = bookingRes.data.booking;
+      const old = JSON.parse(localStorage.getItem("bookings")) || [];
+      localStorage.setItem("bookings", JSON.stringify([booking, ...old]));
+
+      setSelectedFlight(null);
+      setSeat("");
+      window.location.href = "/history";
+    } catch (err) {
+      console.error("Booking failed:", err);
     }
-
-    const bookingRes = await axios.post(`${API_BASE_URL}/api/book`, {
-      flight_id: selectedFlight.flight_id,
-      passenger: "Sreeya",
-      seat
-    });
-
-    const walletRes = await axios.post(
-      `${API_BASE_URL}/api/wallet/deduct`,
-      { amount: price }
-    );
-
-    setWallet(walletRes.data.wallet);
-
-    const booking = bookingRes.data.booking;
-    const old = JSON.parse(localStorage.getItem("bookings")) || [];
-    localStorage.setItem("bookings", JSON.stringify([booking, ...old]));
-
-    alert(`Booked Successfully!\nPNR: ${booking.pnr}`);
-    window.location.href = "/history";
   };
 
   return (
@@ -99,17 +84,15 @@ export default function SearchFlights() {
         className="h-[350px] bg-cover bg-center flex items-center justify-center text-white"
         style={{ backgroundImage: `url(${hero})` }}
       >
-        <h1 className="text-4xl font-bold">
-          Book Flights Instantly ✈️
-        </h1>
+        <h1 className="text-4xl font-bold">Book Flights Instantly ✈️</h1>
       </div>
 
-      {/* ✅ SEARCH BAR (FIXED) */}
-      <div className="bg-white shadow-lg p-6 rounded-lg max-w-5xl mx-auto mt-6 flex gap-4 z-10 relative">
+      {/* SEARCH BAR */}
+      <div className="bg-white shadow-lg p-6 rounded-lg max-w-5xl mx-auto mt-6 flex gap-4">
         <select
-          className="border p-2 w-full text-black bg-white"
+          className="border p-2 w-full"
           value={from}
-          onChange={(e) => setFrom(e.target.value)}
+          onChange={e => setFrom(e.target.value)}
         >
           <option value="">From</option>
           {cities.map(c => (
@@ -118,9 +101,9 @@ export default function SearchFlights() {
         </select>
 
         <select
-          className="border p-2 w-full text-black bg-white"
+          className="border p-2 w-full"
           value={to}
-          onChange={(e) => setTo(e.target.value)}
+          onChange={e => setTo(e.target.value)}
         >
           <option value="">To</option>
           {cities.map(c => (
