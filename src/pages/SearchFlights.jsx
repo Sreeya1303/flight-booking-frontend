@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import axios from "axios";
 import PaymentModal from "../components/PaymentModal";
 import hero from "../assets/hero.jpg";
+import API_BASE_URL from "../config/api";   // ✅ ADDED
 
 const cities = [
   "Hyderabad","Delhi","Mumbai","Bangalore","Chennai",
@@ -18,36 +19,37 @@ export default function SearchFlights() {
 
   // ✅ INIT WALLET ONCE
   useEffect(() => {
-  const storedWallet = localStorage.getItem("wallet");
+    const storedWallet = localStorage.getItem("wallet");
 
-  if (storedWallet === null) {
-    localStorage.setItem("wallet", 50000);
-    setWallet(50000);
-  } else {
-    setWallet(Number(storedWallet));
-  }
-}, []);
+    if (storedWallet === null) {
+      localStorage.setItem("wallet", 50000);
+      setWallet(50000);
+    } else {
+      setWallet(Number(storedWallet));
+    }
+  }, []);
 
-
-
+  // 🔍 SEARCH FLIGHTS
   const searchFlights = async () => {
     if (!from || !to) {
       alert("Select both cities");
       return;
     }
+
     const res = await axios.get(
-      `http://localhost:5000/api/flights?from=${from}&to=${to}`
+      `${API_BASE_URL}/api/flights?from=${from}&to=${to}`   // ✅ FIXED
     );
+
     setFlights(res.data);
   };
 
+  // 💳 CONFIRM BOOKING
   const confirmBooking = async () => {
     try {
-
-       if (wallet <= 0) {
-      alert("Wallet balance is 0. Cannot book ticket.");
-      return;
-    }
+      if (wallet <= 0) {
+        alert("Wallet balance is 0. Cannot book ticket.");
+        return;
+      }
 
       if (!seat) {
         alert("Select seat");
@@ -62,18 +64,21 @@ export default function SearchFlights() {
         return;
       }
 
-      const res = await axios.post("http://localhost:5000/api/book", {
-        flight_id: selectedFlight.flight_id,
-        passenger: "Sreeya",
-        seat
-      });
+      const res = await axios.post(
+        `${API_BASE_URL}/api/book`,   // ✅ FIXED
+        {
+          flight_id: selectedFlight.flight_id,
+          passenger: "Sreeya",
+          seat
+        }
+      );
 
       // ✅ UPDATE WALLET
       const newWallet = wallet - price;
       setWallet(newWallet);
       localStorage.setItem("wallet", newWallet);
 
-      // ✅ SAVE FULL BOOKING DATA
+      // ✅ SAVE BOOKING
       const booking = {
         airline: selectedFlight.airline,
         route: `${selectedFlight.departure_city} → ${selectedFlight.arrival_city}`,
