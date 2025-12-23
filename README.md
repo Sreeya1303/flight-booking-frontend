@@ -1,16 +1,57 @@
-# React + Vite
+Project Overview
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+This is the frontend of the Flight Booking Application built using React + Vite.
+Users can search flights, view prices, book tickets, manage wallet balance, and download tickets.
 
-Currently, two official plugins are available:
+The frontend communicates with the backend via REST APIs.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+Tech Stack
+React (Vite)
+Axios
+Tailwind CSS
+React Router DOM
+Netlify (Deployment)
 
-## React Compiler
+Project Structure
+frontend/
+│── src/
+│   ├── assets/        # Images (hero, icons)
+│   ├── components/    # Navbar, PaymentModal, Cards
+│   ├── pages/         # SearchFlights, BookingHistory
+│   ├── utils/         # PDF generation, surge logic
+│   ├── config/        # API base URL
+│   ├── App.jsx
+│   └── main.jsx
+│── public/
+│── package.json
+│── vite.config.js
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+Environment Configuration
+Create src/config/api.js
+const API_BASE_URL = "https://flight-booking-backend-ekjl.onrender.com";
+export default API_BASE_URL;
 
-## Expanding the ESLint configuration
+▶️ Run Locally
+npm install
+npm run dev
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+
+App runs at:
+http://localhost:5173
+
+🌐 Deployment
+Deployed on Netlify
+Steps:
+Build command: npm run build
+Publish directory: dist
+Set API base URL to Render backend
+
+✅ Features
+Search flights by city
+Dynamic pricing display
+Wallet balance integration
+Ticket booking
+
+Booking history
+
+Ticket PDF download
