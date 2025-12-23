@@ -25,11 +25,17 @@ export default function HistoryCard({ booking }) {
       </p>
 
       <button
-        onClick={() => generatePDF(booking)}
-        className="mt-3 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
-      >
-        Download Ticket
-      </button>
+      className="bg-blue-600 text-white px-3 py-1 rounded"
+      onClick={() =>
+      window.open(
+      `https://flight-booking-backend-xxxx.onrender.com/api/book/ticket/${b.pnr}`,
+      "_blank"
+    )
+  }
+>
+  Download Ticket
+</button>
+
     </div>
   );
 }
